@@ -30,7 +30,7 @@ HTML
 
     <script>
         // กำหนดค่าการเชื่อมต่อ HiveMQ WebSocket
-        const broker = "xxxxxxxx.s1.eu.hivemq.cloud";
+        const broker = "5796ce96006345e49d2690db778b2ebb.s1.eu.hivemq.cloud";
         const port = 8884; // WebSocket Port
         const clientID = "web_client_" + Math.random().toString(16).substr(2, 8);
         
@@ -51,8 +51,8 @@ HTML
 
         client.connect({
             useSSL: true,
-            userName: "YOUR_USERNAME",
-            password: "YOUR_PASSWORD",
+            userName: "UTTbkk",
+            password: "tbkk1234",
             onSuccess: function() {
                 console.log("Connected");
                 client.subscribe("factory/lighting/status");
