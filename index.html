@@ -3,66 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Factory Lighting Control</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <title>Smart Control Dashboard</title>
+    <!-- เรียกใช้ Paho MQTT Library ผ่าน CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f9; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 12px; max-width: 400px; margin: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .btn { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
-        .btn-auto { background: #007bff; color: white; }
-        .btn-on { background: #28a745; color: white; }
-        .btn-off { background: #dc3545; color: white; }
-        .status-box { padding: 15px; margin-top: 15px; font-weight: bold; border-radius: 6px; }
-        .status-on { background: #d4edda; color: #155724; }
-        .status-off { background: #f8d7da; color: #721c24; }
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 420px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .status-bar {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 25px;
+            background-color: #ffebee;
+            color: #c62828;
+            transition: all 0.3s ease;
+        }
+
+        .status-bar.connected {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            outline: none;
+            background-color: #fff;
+            cursor: pointer;
+        }
+
+        /* Toggle Switch Style */
+        .switch-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 8px 0;
+        }
+
+        .switch-label {
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 54px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        input:disabled + .slider {
+            background-color: #e0e0e0;
+            cursor: not-allowed;
+        }
+
+        .mode-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            background: #e0e0e0;
+            color: #555;
+            margin-left: 6px;
+        }
     </style>
 </head>
 <body>
+
     <div class="card">
-        <h2>ควบคุมไฟแสงสว่างโรงงาน</h2>
-        <button class="btn btn-auto" onclick="sendCommand('AUTO')">โหมด AUTO (ตามเวลา)</button>
-        <button class="btn btn-on" onclick="sendCommand('MANUAL_ON')">โหมด MANUAL (เปิดไฟ)</button>
-        <button class="btn btn-off" onclick="sendCommand('MANUAL_OFF')">โหมด MANUAL (ปิดไฟ)</button>
+        <h2>Smart Switch Dashboard</h2>
         
-        <div id="status" class="status-box status-off">สถานะไฟ: OFF</div>
+        <!-- สถานะการเชื่อมต่อ MQTT -->
+        <div id="status" class="status-bar">กำลังเชื่อมต่อ MQTT...</div>
+
+        <!-- โหมดการทำงาน (Auto / Manual) -->
+        <div class="section">
+            <label for="modeSelect">โหมดการทำงาน (Work Mode)</label>
+            <select id="modeSelect" onchange="changeMode()" disabled>
+                <option value="MANUAL">MANUAL (สั่งงานแยกอิสระ)</option>
+                <option value="AUTO">AUTO (คุมทั้ง 3 สวิตช์อัตโนมัติ)</option>
+            </select>
+        </div>
+
+        <!-- สวิตช์เปิด-ปิด โหมด Manual -->
+        <div class="section" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+            <label>ควบคุมสวิตช์ <span id="manualNotice" class="mode-badge">โหมด Manual</span></label>
+            
+            <div class="switch-row">
+                <span class="switch-label">สวิตช์ 1</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sw1" onchange="toggleSwitch('home/switch1', this)" disabled>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-row">
+                <span class="switch-label">สวิตช์ 2</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sw2" onchange="toggleSwitch('home/switch2', this)" disabled>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-row">
+                <span class="switch-label">สวิตช์ 3</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sw3" onchange="toggleSwitch('home/switch3', this)" disabled>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
     </div>
 
     <script>
-        // กำหนดค่าการเชื่อมต่อ HiveMQ WebSocket
-        const broker = "5796ce96006345e49d2690db778b2ebb.s1.eu.hivemq.cloud";
-        const port = 8884; // WebSocket Port
-        const clientID = "web_client_" + Math.random().toString(16).substr(2, 8);
-        
-        const client = new Paho.MQTT.Client(broker, port, clientID);
+        // ========================================================
+        // 1. ตั้งค่าการเชื่อมต่อ HiveMQ Cloud (WebSocket)
+        // ========================================================
+        const hostname = "5796ce96006345e49d2690db778b2ebb.s1.eu.hivemq.cloud";
+        const port = 8884; // พอร์ต Secure WebSocket (WSS) สำหรับ Web Browser
+        const username = "UTTbkk";
+        const password = "tbkk1234";
+        const clientId = "WebDashboard-" + Math.floor(Math.random() * 10000);
 
-        client.onMessageArrived = function(message) {
-            if(message.destinationName === "factory/lighting/status") {
+        // สร้าง Object MQTT Client
+        const client = new Paho.MQTT.Client(hostname, port, clientId);
+
+        // ตั้งค่า Callback
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
+
+        // เริ่มต้นเชื่อมต่อ
+        connectMQTT();
+
+        function connectMQTT() {
+            client.connect({
+                onSuccess: onConnect,
+                onFailure: onFailure,
+                userName: username,
+                password: password,
+                useSSL: true
+            });
+        }
+
+        function onConnect() {
+            console.log("Connected to HiveMQ Cloud");
+            const statusDiv = document.getElementById("status");
+            statusDiv.innerText = "เชื่อมต่อระบบสำเร็จ";
+            statusDiv.classList.add("connected");
+
+            // เปิดให้กดใช้งานคอนโทรลได้
+            document.getElementById("modeSelect").disabled = false;
+
+            // Subscribe หัวข้อเพื่อติดตามสถานะล่าสุด
+            client.subscribe("home/mode");
+            client.subscribe("home/switch1");
+            client.subscribe("home/switch2");
+            client.subscribe("home/switch3");
+        }
+
+        function onFailure(responseObject) {
+            console.log("Connect failed: " + responseObject.errorMessage);
+            document.getElementById("status").innerText = "เชื่อมต่อล้มเหลว ลองใหม่อีกครั้ง...";
+            setTimeout(connectMQTT, 5000); // พยายามเชื่อมต่อใหม่ทุก 5 วินาที
+        }
+
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                console.log("Connection lost: " + responseObject.errorMessage);
                 const statusDiv = document.getElementById("status");
-                if(message.payloadString === "ON") {
-                    statusDiv.innerText = "สถานะไฟ: ON (เปิดอยู่)";
-                    statusDiv.className = "status-box status-on";
-                } else {
-                    statusDiv.innerText = "สถานะไฟ: OFF (ปิดอยู่)";
-                    statusDiv.className = "status-box status-off";
-                }
+                statusDiv.innerText = "การเชื่อมต่อหลุด!";
+                statusDiv.classList.remove("connected");
+                disableControls(true);
+                setTimeout(connectMQTT, 5000);
             }
-        };
+        }
 
-        client.connect({
-            useSSL: true,
-            userName: "UTTbkk",
-            password: "tbkk1234",
-            onSuccess: function() {
-                console.log("Connected");
-                client.subscribe("factory/lighting/status");
+        // รับข้อมูลเมื่อสถานะมีการอัปเดตจากภายนอก/ESP32
+        function onMessageArrived(message) {
+            console.log("Arrived [" + message.destinationName + "]: " + message.payloadString);
+            const topic = message.destinationName;
+            const payload = message.payloadString;
+
+            if (topic === "home/mode") {
+                document.getElementById("modeSelect").value = payload;
+                updateUIByMode(payload);
+            } else if (topic === "home/switch1") {
+                document.getElementById("sw1").checked = (payload === "ON");
+            } else if (topic === "home/switch2") {
+                document.getElementById("sw2").checked = (payload === "ON");
+            } else if (topic === "home/switch3") {
+                document.getElementById("sw3").checked = (payload === "ON");
             }
-        });
+        }
 
-        // แก้ไขฟังก์ชันส่งคำสั่งให้ตรงกับที่ ESP32 รอรับ
-        function sendCommand(cmd) {
-            const message = new Paho.MQTT.Message(cmd);
-            message.destinationName = "factory/lighting/control"; // ส่งเข้า Topic ที่ ESP32 รอฟังอยู่
-            client.send(message);
+        // ========================================================
+        // 2. ฟังก์ชันการส่งคำสั่งไปยัง MQTT
+        // ========================================================
+
+        // ส่งคำสั่งเปลี่ยนโหมด
+        function changeMode() {
+            const selectedMode = document.getElementById("modeSelect").value;
+            publishMessage("home/mode", selectedMode);
+            updateUIByMode(selectedMode);
+        }
+
+        // ส่งคำสั่ง เปิด/ปิด สวิตช์
+        function toggleSwitch(topic, element) {
+            const state = element.checked ? "ON" : "OFF";
+            publishMessage(topic, state);
+        }
+
+        // ฟังก์ชันช่วยส่ง Publish
+        function publishMessage(topic, payload) {
+            if (client.isConnected()) {
+                const message = new Paho.MQTT.Message(payload);
+                message.destinationName = topic;
+                client.send(message);
+            }
+        }
+
+        // อัปเดตการแสดงผลหน้าเว็บตามโหมด (Auto ปิดสวิตช์ manual, Manual เปิดสวิตช์)
+        function updateUIByMode(mode) {
+            const isAuto = (mode === "AUTO");
+            
+            document.getElementById("sw1").disabled = isAuto;
+            document.getElementById("sw2").disabled = isAuto;
+            document.getElementById("sw3").disabled = isAuto;
+
+            const badge = document.getElementById("manualNotice");
+            if (isAuto) {
+                badge.innerText = "โหมด Auto (ควบคุมอัตโนมัติ)";
+                badge.style.background = "#fff3cd";
+                badge.style.color = "#856404";
+            } else {
+                badge.innerText = "โหมด Manual";
+                badge.style.background = "#e0e0e0";
+                badge.style.color = "#555";
+            }
+        }
+
+        function disableControls(state) {
+            document.getElementById("modeSelect").disabled = state;
+            document.getElementById("sw1").disabled = state;
+            document.getElementById("sw2").disabled = state;
+            document.getElementById("sw3").disabled = state;
         }
     </script>
 </body>
