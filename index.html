@@ -1,4 +1,3 @@
-HTML
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -21,9 +20,9 @@ HTML
 <body>
     <div class="card">
         <h2>ควบคุมไฟแสงสว่างโรงงาน</h2>
-        <button class="btn btn-auto" onclick="setMode(0)">โหมด AUTO (ตามเวลา)</button>
-        <button class="btn btn-on" onclick="setMode(1)">โหมด MANUAL (เปิดไฟ)</button>
-        <button class="btn btn-off" onclick="setMode(2)">โหมด MANUAL (ปิดไฟ)</button>
+        <button class="btn btn-auto" onclick="sendCommand('AUTO')">โหมด AUTO (ตามเวลา)</button>
+        <button class="btn btn-on" onclick="sendCommand('MANUAL_ON')">โหมด MANUAL (เปิดไฟ)</button>
+        <button class="btn btn-off" onclick="sendCommand('MANUAL_OFF')">โหมด MANUAL (ปิดไฟ)</button>
         
         <div id="status" class="status-box status-off">สถานะไฟ: OFF</div>
     </div>
@@ -59,9 +58,10 @@ HTML
             }
         });
 
-        function setMode(mode) {
-            const message = new Paho.MQTT.Message(mode.toString());
-            message.destinationName = "factory/lighting/mode/set";
+        // แก้ไขฟังก์ชันส่งคำสั่งให้ตรงกับที่ ESP32 รอรับ
+        function sendCommand(cmd) {
+            const message = new Paho.MQTT.Message(cmd);
+            message.destinationName = "factory/lighting/control"; // ส่งเข้า Topic ที่ ESP32 รอฟังอยู่
             client.send(message);
         }
     </script>
