@@ -193,6 +193,14 @@
       border-radius: 12px;
       padding: 20px;
       margin-bottom: 25px;
+      transition: all 0.3s ease;
+    }
+
+    /* สไตล์เมื่อปิดใช้งานแผง Auto */
+    .timer-config-card.disabled-panel {
+      opacity: 0.4;
+      pointer-events: none;
+      filter: grayscale(80%);
     }
 
     .timer-header {
@@ -247,6 +255,12 @@
       width: 100%;
     }
 
+    .timer-inputs input[type="time"]:disabled {
+      cursor: not-allowed;
+      background-color: #0f172a;
+      color: #64748b;
+    }
+
     /* SWITCH GRID & CARDS */
     .switch-grid {
       display: grid;
@@ -262,7 +276,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 15px;
       transition: all 0.2s;
     }
 
@@ -282,20 +296,11 @@
       color: #ffffff;
     }
 
-    .light-badge {
-      font-size: 0.75rem;
-      background-color: #334155;
-      color: #cbd5e1;
-      padding: 2px 8px;
-      border-radius: 12px;
-    }
-
     /* REAL-TIME STATUS INDICATOR */
     .status-container {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin: 5px 0;
     }
 
     .status-dot {
@@ -549,7 +554,6 @@
 
         card.innerHTML = `
           <div class="switch-name">สวิตช์ ${name}</div>
-          <span class="light-badge">10 โคม (40 หลอด)</span>
           <div class="status-container">
             <div class="status-dot"></div>
             <span class="status-text" id="status-text-${name}">OFF</span>
@@ -567,18 +571,36 @@
       zoneModes[zone] = mode;
       const autoBtn = document.getElementById(`btn-auto-${zone}`);
       const manualBtn = document.getElementById(`btn-manual-${zone}`);
+      const timerPanel = document.getElementById(`timer-panel-${zone}`);
       const switchList = zone === 'pd3' ? pd3Switches : gdcSwitches;
 
+      // รายการ Input ควบคุมตั้งเวลาในแผง Auto
+      const timerInputs = timerPanel.querySelectorAll('input');
+
       if (mode === 'AUTO') {
+        // เมื่อเลือก AUTO: สวิตช์สลับโหมด
         autoBtn.className = 'mode-btn active-auto';
         manualBtn.className = 'mode-btn';
+
+        // ปลดล็อคให้ปรับแผง Auto ได้ตามปกติ
+        timerPanel.classList.remove('disabled-panel');
+        timerInputs.forEach(input => input.disabled = false);
+
+        // ล็อคสวิตช์ฝั่ง Manual
         switchList.forEach(name => {
           document.getElementById(`card-${name}`).classList.add('disabled');
           document.getElementById(`toggle-${name}`).disabled = true;
         });
       } else {
+        // เมื่อเลือก MANUAL: สวิตช์สลับโหมด
         autoBtn.className = 'mode-btn';
         manualBtn.className = 'mode-btn active-manual';
+
+        // ปิดการทำงานและทำให้แผง Auto จางลง
+        timerPanel.classList.add('disabled-panel');
+        timerInputs.forEach(input => input.disabled = true);
+
+        // เปิดสวิตช์ฝั่ง Manual ให้ควบคุมได้อย่างอิสระ
         switchList.forEach(name => {
           document.getElementById(`card-${name}`).classList.remove('disabled');
           document.getElementById(`toggle-${name}`).disabled = false;
@@ -591,7 +613,7 @@
       console.log(`[Manual Control] Switch ${switchName} -> ${isChecked ? 'ON' : 'OFF'}`);
     }
 
-    // Function to update UI (Useful for Real-time Hardware Feedback)
+    // ฟังก์ชันอัปเดตสถานะบนหน้าจอ (ใช้รองรับ Hardware Feedback ด้วย)
     function updateSwitchUI(switchName, isOn) {
       const card = document.getElementById(`card-${switchName}`);
       const statusText = document.getElementById(`status-text-${switchName}`);
