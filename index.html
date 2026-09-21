@@ -26,7 +26,7 @@
     .app-header {
       text-align: center;
       margin-top: 20px;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
     .app-header h1 {
@@ -57,13 +57,63 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* --- PAGE 1: ZONE SELECTOR --- */
+    /* --- PAGE 1: ZONE & MODE SELECTOR --- */
+    .mode-selection-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 15px 25px;
+      max-width: 500px;
+      margin: 0 auto 30px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mode-label {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    .mode-switch-group {
+      display: flex;
+      background-color: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 4px;
+      gap: 5px;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active-auto {
+      background-color: #0284c7;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    }
+
+    .mode-btn.active-manual {
+      background-color: #eab308;
+      color: #0f172a;
+      box-shadow: 0 2px 8px rgba(234, 179, 8, 0.4);
+    }
+
     .zone-container {
       display: flex;
       gap: 25px;
       justify-content: center;
       flex-wrap: wrap;
-      margin-top: 20px;
     }
 
     .zone-card {
@@ -86,23 +136,6 @@
       border-color: #38bdf8;
       box-shadow: 0 20px 30px -10px rgba(56, 189, 248, 0.25);
       background: #24334a;
-    }
-
-    .zone-badge {
-      align-self: center;
-      background-color: #0369a1;
-      color: #e0f2fe;
-      padding: 6px 16px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-      text-transform: uppercase;
-    }
-
-    .zone-card.gdc .zone-badge {
-      background-color: #0d9488;
-      color: #ccfbf1;
     }
 
     .zone-title {
@@ -143,6 +176,8 @@
       margin-bottom: 25px;
       padding-bottom: 15px;
       border-bottom: 1px solid #334155;
+      flex-wrap: wrap;
+      gap: 15px;
     }
 
     .back-btn {
@@ -155,18 +190,39 @@
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
 
     .back-btn:hover {
       background-color: #475569;
     }
 
+    .zone-heading-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
     .zone-heading {
       font-size: 1.5rem;
       color: #38bdf8;
+    }
+
+    .current-mode-badge {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .current-mode-badge.auto {
+      background-color: #0284c7;
+      color: #ffffff;
+    }
+
+    .current-mode-badge.manual {
+      background-color: #eab308;
+      color: #0f172a;
     }
 
     /* Switch Grid Layout */
@@ -186,7 +242,12 @@
       align-items: center;
       justify-content: space-between;
       gap: 15px;
-      transition: border-color 0.2s;
+      transition: all 0.2s;
+    }
+
+    .switch-card.disabled {
+      opacity: 0.5;
+      pointer-events: none;
     }
 
     .switch-card.active-on {
@@ -266,19 +327,29 @@
   <!-- Header -->
   <div class="app-header">
     <h1>Switch Control System</h1>
-    <p>ระบบควบคุมสวิตช์แยกตามโซนการทำงาน</p>
+    <p>ระบบควบคุมสวิตช์ไฟแสงสว่างพื้นที่ FACTORY2 EXTENSION</p>
   </div>
 
-  <!-- VIEW 1: PAGE HOME (ZONE SELECTOR) -->
+  <!-- VIEW 1: PAGE HOME (MODE & ZONE SELECTOR) -->
   <div id="view-home" class="view active">
+    
+    <!-- Global Mode Selector Box -->
+    <div class="mode-selection-box">
+      <span class="mode-label">โหมดการทำงานระบบ:</span>
+      <div class="mode-switch-group">
+        <button class="mode-btn active-auto" id="btn-global-auto" onclick="setGlobalMode('AUTO')">AUTO</button>
+        <button class="mode-btn" id="btn-global-manual" onclick="setGlobalMode('MANUAL')">MANUAL</button>
+      </div>
+    </div>
+
+    <!-- Zone Cards Container -->
     <div class="zone-container">
       
       <!-- Card PD3 and SCM -->
       <div class="zone-card" onclick="switchView('view-pd3-scm')">
         <div>
-          <span class="zone-badge">12 Switches</span>
           <h2 class="zone-title">PD3 and SCM</h2>
-          <p class="zone-info">โซนการทำงาน PD3 & SCM<br>สวิตช์เรียงตั้งแต่ <strong>A - L</strong></p>
+          <p class="zone-info">โซนการทำงาน PD3 & SCM</p>
         </div>
         <button class="zone-btn">เข้าสู่หน้าควบคุม</button>
       </div>
@@ -286,9 +357,8 @@
       <!-- Card Zone GDC -->
       <div class="zone-card gdc" onclick="switchView('view-gdc')">
         <div>
-          <span class="zone-badge">9 Switches</span>
           <h2 class="zone-title">Zone GDC</h2>
-          <p class="zone-info">โซนการทำงาน GDC<br>สวิตช์เรียงตั้งแต่ <strong>M - U</strong></p>
+          <p class="zone-info">โซนการทำงาน GDC</p>
         </div>
         <button class="zone-btn">เข้าสู่หน้าควบคุม</button>
       </div>
@@ -296,11 +366,14 @@
     </div>
   </div>
 
-  <!-- VIEW 2: PD3 AND SCM CONTROL (SWITCHES A-L) -->
+  <!-- VIEW 2: PD3 AND SCM CONTROL -->
   <div id="view-pd3-scm" class="view">
     <div class="dashboard-topbar">
       <button class="back-btn" onclick="switchView('view-home')">← ย้อนกลับหน้าแรก</button>
-      <h2 class="zone-heading">โซน: PD3 and SCM</h2>
+      <div class="zone-heading-box">
+        <h2 class="zone-heading">โซน: PD3 and SCM</h2>
+        <span class="current-mode-badge auto" id="badge-pd3">AUTO</span>
+      </div>
     </div>
     
     <div class="switch-grid" id="grid-pd3-scm">
@@ -308,11 +381,14 @@
     </div>
   </div>
 
-  <!-- VIEW 3: GDC CONTROL (SWITCHES M-U) -->
+  <!-- VIEW 3: GDC CONTROL -->
   <div id="view-gdc" class="view">
     <div class="dashboard-topbar">
       <button class="back-btn" onclick="switchView('view-home')">← ย้อนกลับหน้าแรก</button>
-      <h2 class="zone-heading">โซน: Zone GDC</h2>
+      <div class="zone-heading-box">
+        <h2 class="zone-heading">โซน: Zone GDC</h2>
+        <span class="current-mode-badge auto" id="badge-gdc">AUTO</span>
+      </div>
     </div>
 
     <div class="switch-grid" id="grid-gdc">
@@ -321,11 +397,12 @@
   </div>
 
   <script>
-    // List of Switches per Zone
     const pd3ScmSwitches = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
     const gdcSwitches = ['M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U'];
 
-    // Function to switch visible View
+    // Current System Mode State
+    let currentGlobalMode = 'AUTO';
+
     function switchView(viewId) {
       document.querySelectorAll('.view').forEach(view => {
         view.classList.remove('active');
@@ -333,21 +410,61 @@
       document.getElementById(viewId).classList.add('active');
     }
 
-    // Generate Switch Cards UI
+    // Set System Mode (AUTO / MANUAL)
+    function setGlobalMode(mode) {
+      currentGlobalMode = mode;
+      
+      const autoBtn = document.getElementById('btn-global-auto');
+      const manualBtn = document.getElementById('btn-global-manual');
+      const badgePd3 = document.getElementById('badge-pd3');
+      const badgeGdc = document.getElementById('badge-gdc');
+
+      if (mode === 'AUTO') {
+        autoBtn.className = 'mode-btn active-auto';
+        manualBtn.className = 'mode-btn';
+
+        badgePd3.className = 'current-mode-badge auto';
+        badgePd3.innerText = 'AUTO';
+        badgeGdc.className = 'current-mode-badge auto';
+        badgeGdc.innerText = 'AUTO';
+
+        // Lock switches for AUTO mode
+        pd3ScmSwitches.concat(gdcSwitches).forEach(name => {
+          document.getElementById(`card-switch-${name}`).classList.add('disabled');
+        });
+      } else {
+        autoBtn.className = 'mode-btn';
+        manualBtn.className = 'mode-btn active-manual';
+
+        badgePd3.className = 'current-mode-badge manual';
+        badgePd3.innerText = 'MANUAL';
+        badgeGdc.className = 'current-mode-badge manual';
+        badgeGdc.innerText = 'MANUAL';
+
+        // Unlock switches for MANUAL mode
+        pd3ScmSwitches.concat(gdcSwitches).forEach(name => {
+          document.getElementById(`card-switch-${name}`).classList.remove('disabled');
+        });
+      }
+
+      console.log(`Global System Mode updated to: ${mode}`);
+    }
+
+    // Render Switch Cards UI
     function renderSwitches(switchList, containerId) {
       const container = document.getElementById(containerId);
       container.innerHTML = '';
 
       switchList.forEach(name => {
         const card = document.createElement('div');
-        card.className = 'switch-card';
+        card.className = 'switch-card disabled'; // Default AUTO mode locks manual switches
         card.id = `card-switch-${name}`;
 
         card.innerHTML = `
           <div class="switch-name">สวิตช์ ${name}</div>
           <div class="switch-status" id="status-${name}">OFF</div>
           <label class="toggle-container">
-            <input type="checkbox" onchange="toggleSwitchState('${name}', this.checked)">
+            <input type="checkbox" id="input-switch-${name}" onchange="toggleSwitchState('${name}', this.checked)">
             <span class="slider"></span>
           </label>
         `;
@@ -355,7 +472,6 @@
       });
     }
 
-    // Toggle State Event Function
     function toggleSwitchState(switchName, isChecked) {
       const card = document.getElementById(`card-switch-${switchName}`);
       const statusText = document.getElementById(`status-${switchName}`);
@@ -364,12 +480,10 @@
         card.classList.add('active-on');
         statusText.innerText = 'ON';
         console.log(`Switch ${switchName}: TURNED ON`);
-        // ส่งคำสั่งไปยัง Gridhub / MQTT Telemetry ที่นี่
       } else {
         card.classList.remove('active-on');
         statusText.innerText = 'OFF';
         console.log(`Switch ${switchName}: TURNED OFF`);
-        // ส่งคำสั่งไปยัง Gridhub / MQTT Telemetry ที่นี่
       }
     }
 
