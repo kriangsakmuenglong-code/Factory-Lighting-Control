@@ -196,7 +196,6 @@
       transition: all 0.3s ease;
     }
 
-    /* สไตล์เมื่อปิดใช้งานแผง Auto */
     .timer-config-card.disabled-panel {
       opacity: 0.4;
       pointer-events: none;
@@ -280,14 +279,23 @@
       transition: all 0.2s;
     }
 
-    .switch-card.active-on {
-      border-color: #22c55e;
-      background-color: #14291f;
-      box-shadow: 0 0 15px rgba(34, 197, 94, 0.15);
-    }
-
+    /* สไตล์โหมด AUTO (โหมดปกติที่ล็อคอยู่) */
     .switch-card.disabled {
       opacity: 0.6;
+    }
+
+    /* สไตล์เมื่อสวิตช์เปิดอยู่ (ON) */
+    .switch-card.active-on {
+      border-color: #22c55e !important;
+      background-color: #14291f;
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+    }
+
+    /* สไตล์โหมด MANUAL และสถานะปิดอยู่ (OFF) -> สีแดง */
+    .switch-card.active-off-manual {
+      border-color: #ef4444;
+      background-color: #291415;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
     }
 
     .switch-name {
@@ -311,19 +319,30 @@
       transition: all 0.3s;
     }
 
-    .switch-card.active-on .status-dot {
-      background-color: #22c55e;
-      box-shadow: 0 0 10px #22c55e;
-    }
-
     .status-text {
       font-size: 0.9rem;
       font-weight: 700;
       color: #94a3b8;
     }
 
+    /* สถานะ ON (สีเขียว) */
+    .switch-card.active-on .status-dot {
+      background-color: #22c55e;
+      box-shadow: 0 0 10px #22c55e;
+    }
+
     .switch-card.active-on .status-text {
       color: #4ade80;
+    }
+
+    /* สถานะ OFF ในโหมด MANUAL (สีแดง) */
+    .switch-card.active-off-manual .status-dot {
+      background-color: #ef4444;
+      box-shadow: 0 0 10px #ef4444;
+    }
+
+    .switch-card.active-off-manual .status-text {
+      color: #f87171;
     }
 
     /* UI TOGGLE SWITCH */
@@ -574,36 +593,37 @@
       const timerPanel = document.getElementById(`timer-panel-${zone}`);
       const switchList = zone === 'pd3' ? pd3Switches : gdcSwitches;
 
-      // รายการ Input ควบคุมตั้งเวลาในแผง Auto
       const timerInputs = timerPanel.querySelectorAll('input');
 
       if (mode === 'AUTO') {
-        // เมื่อเลือก AUTO: สวิตช์สลับโหมด
         autoBtn.className = 'mode-btn active-auto';
         manualBtn.className = 'mode-btn';
 
-        // ปลดล็อคให้ปรับแผง Auto ได้ตามปกติ
         timerPanel.classList.remove('disabled-panel');
         timerInputs.forEach(input => input.disabled = false);
 
-        // ล็อคสวิตช์ฝั่ง Manual
         switchList.forEach(name => {
-          document.getElementById(`card-${name}`).classList.add('disabled');
+          const card = document.getElementById(`card-${name}`);
+          card.classList.add('disabled');
+          card.classList.remove('active-off-manual');
           document.getElementById(`toggle-${name}`).disabled = true;
         });
       } else {
-        // เมื่อเลือก MANUAL: สวิตช์สลับโหมด
         autoBtn.className = 'mode-btn';
         manualBtn.className = 'mode-btn active-manual';
 
-        // ปิดการทำงานและทำให้แผง Auto จางลง
         timerPanel.classList.add('disabled-panel');
         timerInputs.forEach(input => input.disabled = true);
 
-        // เปิดสวิตช์ฝั่ง Manual ให้ควบคุมได้อย่างอิสระ
         switchList.forEach(name => {
-          document.getElementById(`card-${name}`).classList.remove('disabled');
-          document.getElementById(`toggle-${name}`).disabled = false;
+          const card = document.getElementById(`card-${name}`);
+          const toggleInput = document.getElementById(`toggle-${name}`);
+          
+          card.classList.remove('disabled');
+          toggleInput.disabled = false;
+
+          // อัปเดตการแสดงผลสีตามสถานะปัจจุบันในโหมด Manual
+          updateSwitchUI(name, toggleInput.checked);
         });
       }
     }
@@ -613,19 +633,31 @@
       console.log(`[Manual Control] Switch ${switchName} -> ${isChecked ? 'ON' : 'OFF'}`);
     }
 
-    // ฟังก์ชันอัปเดตสถานะบนหน้าจอ (ใช้รองรับ Hardware Feedback ด้วย)
     function updateSwitchUI(switchName, isOn) {
       const card = document.getElementById(`card-${switchName}`);
       const statusText = document.getElementById(`status-text-${switchName}`);
       const toggleInput = document.getElementById(`toggle-${switchName}`);
 
+      // ระบุว่าสวิตช์นี้อยู่ในโซนไหน
+      const zone = pd3Switches.includes(switchName) ? 'pd3' : 'gdc';
+      const isManualMode = zoneModes[zone] === 'MANUAL';
+
       toggleInput.checked = isOn;
+      
       if (isOn) {
         card.classList.add('active-on');
+        card.classList.remove('active-off-manual');
         statusText.innerText = 'ON';
       } else {
         card.classList.remove('active-on');
         statusText.innerText = 'OFF';
+        
+        // หากปิด (OFF) และอยู่ในโหมด MANUAL ให้แสดงผลเป็นสีแดง
+        if (isManualMode) {
+          card.classList.add('active-off-manual');
+        } else {
+          card.classList.remove('active-off-manual');
+        }
       }
     }
 
