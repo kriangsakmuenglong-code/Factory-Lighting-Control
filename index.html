@@ -3,103 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Control Dashboard</title>
-    <!-- เรียกใช้ Paho MQTT Library ผ่าน CDN -->
+    <title>12-Channel Smart Lighting Control Center</title>
+    <!-- Paho MQTT Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
+        :root {
+            --bg-color: #0b132b;
+            --card-bg: #1c2541;
+            --card-inner: #0f172a;
+            --text-main: #ffffff;
+            --text-sub: #94a3b8;
+            --accent-cyan: #38bdf8;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
+            --border-color: #334155;
+            --switch-off: #475569;
+        }
+
         * {
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Prompt', sans-serif;
             margin: 0;
             padding: 0;
+            transition: all 0.2s ease-in-out;
         }
 
         body {
-            background-color: #f4f7f6;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px 10px;
             display: flex;
             justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
         }
 
-        .card {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        .container {
             width: 100%;
-            max-width: 420px;
+            max-width: 1000px;
         }
 
-        h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        .status-bar {
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 25px;
-            background-color: #ffebee;
-            color: #c62828;
-            transition: all 0.3s ease;
-        }
-
-        .status-bar.connected {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .section {
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
-        }
-
-        label {
-            display: block;
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        select {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 16px;
-            outline: none;
-            background-color: #fff;
-            cursor: pointer;
-        }
-
-        /* Toggle Switch Style */
-        .switch-row {
+        /* Top Header */
+        .top-header {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px 24px;
+            border-radius: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
-            padding: 8px 0;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
-        .switch-label {
+        .top-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .connection-status.connected {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-red);
+        }
+
+        .connection-status.connected .status-dot {
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        /* Layout Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 850px) {
+            .main-grid {
+                grid-template-columns: 340px 1fr;
+            }
+        }
+
+        /* Cards Base */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
             font-size: 16px;
-            color: #333;
-            font-weight: 500;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--accent-cyan);
         }
 
+        /* System Mode Selector */
+        .mode-select-box {
+            background: var(--card-inner);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+
+        .mode-select-box select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: #fff;
+            border: 1px solid var(--border-color);
+            font-size: 15px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Timer Section */
+        .timer-block {
+            background: var(--card-inner);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .timer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .timer-title {
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .time-input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .time-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .time-box label {
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+
+        .time-box input[type="time"] {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            width: 100%;
+        }
+
+        /* Toggle Switch UI Component */
         .toggle-switch {
             position: relative;
+            width: 44px;
+            height: 24px;
             display: inline-block;
-            width: 54px;
-            height: 28px;
         }
 
         .toggle-switch input {
@@ -111,230 +220,391 @@
         .slider {
             position: absolute;
             cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .3s;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--switch-off);
             border-radius: 34px;
+            transition: 0.3s;
         }
 
         .slider:before {
             position: absolute;
             content: "";
-            height: 20px;
-            width: 20px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .3s;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #fff;
             border-radius: 50%;
+            transition: 0.3s;
         }
 
         input:checked + .slider {
-            background-color: #2196F3;
+            background-color: var(--accent-green);
         }
 
         input:checked + .slider:before {
-            transform: translateX(26px);
+            transform: translateX(20px);
         }
 
-        input:disabled + .slider {
-            background-color: #e0e0e0;
-            cursor: not-allowed;
+        /* 12-Switches Grid Display */
+        .switches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
         }
 
-        .mode-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            font-size: 12px;
-            border-radius: 4px;
-            background: #e0e0e0;
-            color: #555;
-            margin-left: 6px;
+        .switch-card {
+            background: var(--card-inner);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .switch-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .switch-icon-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .switch-icon-title i {
+            font-size: 18px;
+            color: var(--text-sub);
+        }
+
+        .switch-card.active .switch-icon-title i {
+            color: var(--accent-amber);
+            filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
+        }
+
+        .switch-card-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 10px;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-sub);
+        }
+
+        .switch-card.active .status-badge {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--accent-green);
+        }
+
+        .btn-save-timer {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-cyan);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-save-timer:hover {
+            opacity: 0.9;
         }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>Smart Switch Dashboard</h2>
-        
-        <!-- สถานะการเชื่อมต่อ MQTT -->
-        <div id="status" class="status-bar">กำลังเชื่อมต่อ MQTT...</div>
-
-        <!-- โหมดการทำงาน (Auto / Manual) -->
-        <div class="section">
-            <label for="modeSelect">โหมดการทำงาน (Work Mode)</label>
-            <select id="modeSelect" onchange="changeMode()" disabled>
-                <option value="MANUAL">MANUAL (สั่งงานแยกอิสระ)</option>
-                <option value="AUTO">AUTO (คุมทั้ง 3 สวิตช์อัตโนมัติ)</option>
-            </select>
+    <div class="container">
+        <!-- Top Navigation / Status Header -->
+        <div class="top-header">
+            <h1><i class="fa-solid fa-lightbulb"></i> ระบบควบคุมไฟ 12 สวิตช์ (48 โคม)</h1>
+            <div id="connectionStatus" class="connection-status">
+                <span class="status-dot"></span>
+                <span id="statusText">Disconnected</span>
+            </div>
         </div>
 
-        <!-- สวิตช์เปิด-ปิด โหมด Manual -->
-        <div class="section" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
-            <label>ควบคุมสวิตช์ <span id="manualNotice" class="mode-badge">โหมด Manual</span></label>
-            
-            <div class="switch-row">
-                <span class="switch-label">สวิตช์ 1</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="sw1" onchange="toggleSwitch('home/switch1', this)" disabled>
-                    <span class="slider"></span>
-                </label>
+        <div class="main-grid">
+            <!-- Left Side: Configuration & Timer Panel -->
+            <div class="left-panel">
+                
+                <!-- Mode Panel -->
+                <div class="card">
+                    <div class="card-title">
+                        <span><i class="fa-solid fa-sliders"></i> โหมดการทำงานหลัก</span>
+                    </div>
+                    <div class="mode-select-box">
+                        <select id="sysMode" onchange="changeSystemMode()">
+                            <option value="MANUAL">MANUAL (สั่งงานอิสระ)</option>
+                            <option value="AUTO">AUTO (ทำงานตามตั้งเวลา)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Dual Timer Panel -->
+                <div class="card">
+                    <div class="card-title">
+                        <span><i class="fa-regular fa-clock"></i> ตั้งเวลา AUTO</span>
+                    </div>
+
+                    <!-- Timer 1 -->
+                    <div class="timer-block">
+                        <div class="timer-header">
+                            <span class="timer-title"><i class="fa-solid fa-1"></i> ช่วงเวลาที่ 1</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="t1_enable" onchange="toggleTimerEnable(1)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="time-input-group">
+                            <div class="time-box">
+                                <label>เวลาเปิด (ON)</label>
+                                <input type="time" id="t1_on" value="17:30">
+                            </div>
+                            <div class="time-box">
+                                <label>เวลาปิด (OFF)</label>
+                                <input type="time" id="t1_off" value="07:00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timer 2 (แทรกเวลา) -->
+                    <div class="timer-block">
+                        <div class="timer-header">
+                            <span class="timer-title"><i class="fa-solid fa-2"></i> ช่วงเวลาที่ 2 (แทรก)</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="t2_enable" onchange="toggleTimerEnable(2)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="time-input-group">
+                            <div class="time-box">
+                                <label>เวลาเปิด (ON)</label>
+                                <input type="time" id="t2_on" value="12:00">
+                            </div>
+                            <div class="time-box">
+                                <label>เวลาปิด (OFF)</label>
+                                <input type="time" id="t2_off" value="13:00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn-save-timer" onclick="saveTimerSettings()"><i class="fa-solid fa-floppy-disk"></i> บันทึกการตั้งเวลา</button>
+                </div>
+
             </div>
 
-            <div class="switch-row">
-                <span class="switch-label">สวิตช์ 2</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="sw2" onchange="toggleSwitch('home/switch2', this)" disabled>
-                    <span class="slider"></span>
-                </label>
+            <!-- Right Side: 12 Switches Control Panel -->
+            <div class="right-panel">
+                <div class="card">
+                    <div class="card-title">
+                        <span><i class="fa-solid fa-grip"></i> แผงสวิตช์ควบคุม (12 แชนแนล)</span>
+                        <span id="currentModeBadge" style="font-size: 12px; color: var(--accent-cyan);">MANUAL MODE</span>
+                    </div>
+
+                    <!-- 12 Switches Grid -->
+                    <div class="switches-grid" id="switchesContainer">
+                        <!-- Dynamic JavaScript Rendered Switches Here -->
+                    </div>
+                </div>
             </div>
 
-            <div class="switch-row">
-                <span class="switch-label">สวิตช์ 3</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="sw3" onchange="toggleSwitch('home/switch3', this)" disabled>
-                    <span class="slider"></span>
-                </label>
-            </div>
         </div>
     </div>
 
     <script>
-        // ========================================================
-        // 1. ตั้งค่าการเชื่อมต่อ HiveMQ Cloud (WebSocket)
-        // ========================================================
+        // MQTT Connection Parameters
         const hostname = "5796ce96006345e49d2690db778b2ebb.s1.eu.hivemq.cloud";
-        const port = 8884; // พอร์ต Secure WebSocket (WSS) สำหรับ Web Browser
+        const port = 8884;
         const username = "UTTbkk";
         const password = "tbkk1234";
-        const clientId = "WebDashboard-" + Math.floor(Math.random() * 10000);
+        const clientId = "WebClient-12Ch-" + Math.random().toString(36).substring(2, 8);
 
-        // สร้าง Object MQTT Client
         const client = new Paho.MQTT.Client(hostname, port, clientId);
 
-        // ตั้งค่า Callback
-        client.onConnectionLost = onConnectionLost;
-        client.onMessageArrived = onMessageArrived;
+        // State Array for 12 Switches
+        let switchesState = new Array(12).fill(false);
+        let currentSystemMode = "MANUAL";
 
-        // เริ่มต้นเชื่อมต่อ
+        // Initial Dynamic Build 12 Switches UI
+        function initSwitchesUI() {
+            const container = document.getElementById("switchesContainer");
+            container.innerHTML = "";
+
+            for (let i = 1; i <= 12; i++) {
+                const switchHtml = `
+                    <div class="switch-card" id="card-sw-${i}">
+                        <div class="switch-card-top">
+                            <div class="switch-icon-title">
+                                <i class="fa-solid fa-lightbulb"></i>
+                                <span style="font-size: 14px; font-weight: 500;">สวิตช์ ${i}</span>
+                            </div>
+                        </div>
+                        <div class="switch-card-bottom">
+                            <span class="status-badge" id="badge-sw-${i}">OFF</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="sw-${i}" onchange="onSwitchToggle(${i}, this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += switchHtml;
+            }
+        }
+
+        // Initialize App
+        initSwitchesUI();
         connectMQTT();
 
         function connectMQTT() {
+            client.onConnectionLost = onConnectionLost;
+            client.onMessageArrived = onMessageArrived;
+
             client.connect({
                 onSuccess: onConnect,
                 onFailure: onFailure,
                 userName: username,
                 password: password,
-                useSSL: true
+                useSSL: true,
+                keepAliveInterval: 30
             });
         }
 
         function onConnect() {
-            console.log("Connected to HiveMQ Cloud");
-            const statusDiv = document.getElementById("status");
-            statusDiv.innerText = "เชื่อมต่อระบบสำเร็จ";
-            statusDiv.classList.add("connected");
-
-            // เปิดให้กดใช้งานคอนโทรลได้
-            document.getElementById("modeSelect").disabled = false;
-
-            // Subscribe หัวข้อเพื่อติดตามสถานะล่าสุด
-            client.subscribe("home/mode");
-            client.subscribe("home/switch1");
-            client.subscribe("home/switch2");
-            client.subscribe("home/switch3");
+            updateStatusUI(true, "Connected");
+            
+            // Subscribe to Master Control & Status Topics
+            client.subscribe("home12/mode");
+            client.subscribe("home12/timer");
+            client.subscribe("home12/status"); // Subscribes JSON Status from ESP32
         }
 
-        function onFailure(responseObject) {
-            console.log("Connect failed: " + responseObject.errorMessage);
-            document.getElementById("status").innerText = "เชื่อมต่อล้มเหลว ลองใหม่อีกครั้ง...";
-            setTimeout(connectMQTT, 5000); // พยายามเชื่อมต่อใหม่ทุก 5 วินาที
+        function onFailure(err) {
+            updateStatusUI(false, "Connecting...");
+            setTimeout(connectMQTT, 4000);
         }
 
-        function onConnectionLost(responseObject) {
-            if (responseObject.errorCode !== 0) {
-                console.log("Connection lost: " + responseObject.errorMessage);
-                const statusDiv = document.getElementById("status");
-                statusDiv.innerText = "การเชื่อมต่อหลุด!";
-                statusDiv.classList.remove("connected");
-                disableControls(true);
-                setTimeout(connectMQTT, 5000);
-            }
+        function onConnectionLost(response) {
+            updateStatusUI(false, "Disconnected");
+            setTimeout(connectMQTT, 4000);
         }
 
-        // รับข้อมูลเมื่อสถานะมีการอัปเดตจากภายนอก/ESP32
+        // Handle Incoming MQTT Messages
         function onMessageArrived(message) {
-            console.log("Arrived [" + message.destinationName + "]: " + message.payloadString);
             const topic = message.destinationName;
             const payload = message.payloadString;
 
-            if (topic === "home/mode") {
-                document.getElementById("modeSelect").value = payload;
-                updateUIByMode(payload);
-            } else if (topic === "home/switch1") {
-                document.getElementById("sw1").checked = (payload === "ON");
-            } else if (topic === "home/switch2") {
-                document.getElementById("sw2").checked = (payload === "ON");
-            } else if (topic === "home/switch3") {
-                document.getElementById("sw3").checked = (payload === "ON");
+            try {
+                if (topic === "home12/mode") {
+                    currentSystemMode = payload;
+                    document.getElementById("sysMode").value = payload;
+                    applyModeUIStatus(payload);
+                } 
+                else if (topic === "home12/timer") {
+                    const tData = JSON.parse(payload);
+                    document.getElementById("t1_enable").checked = tData.t1_en;
+                    document.getElementById("t1_on").value = tData.t1_on;
+                    document.getElementById("t1_off").value = tData.t1_off;
+
+                    document.getElementById("t2_enable").checked = tData.t2_en;
+                    document.getElementById("t2_on").value = tData.t2_on;
+                    document.getElementById("t2_off").value = tData.t2_off;
+                }
+                else if (topic === "home12/status") {
+                    // Update real-time hardware button & relay states array from ESP32
+                    const states = JSON.parse(payload); // Expecting [0,1,0,0,1,...]
+                    for (let i = 0; i < 12; i++) {
+                        updateSingleSwitchUI(i + 1, states[i] === 1);
+                    }
+                }
+            } catch (e) {
+                console.error("MQTT Parsing Error:", e);
             }
         }
 
-        // ========================================================
-        // 2. ฟังก์ชันการส่งคำสั่งไปยัง MQTT
-        // ========================================================
-
-        // ส่งคำสั่งเปลี่ยนโหมด
-        function changeMode() {
-            const selectedMode = document.getElementById("modeSelect").value;
-            publishMessage("home/mode", selectedMode);
-            updateUIByMode(selectedMode);
+        // User Action Handlers
+        function onSwitchToggle(ch, isChecked) {
+            switchesState[ch - 1] = isChecked;
+            publishMQTT("home12/control", JSON.stringify({ channel: ch, state: isChecked ? 1 : 0 }));
         }
 
-        // ส่งคำสั่ง เปิด/ปิด สวิตช์
-        function toggleSwitch(topic, element) {
-            const state = element.checked ? "ON" : "OFF";
-            publishMessage(topic, state);
+        function changeSystemMode() {
+            const mode = document.getElementById("sysMode").value;
+            publishMQTT("home12/mode", mode, true);
+            applyModeUIStatus(mode);
         }
 
-        // ฟังก์ชันช่วยส่ง Publish
-        function publishMessage(topic, payload) {
-            if (client.isConnected()) {
-                const message = new Paho.MQTT.Message(payload);
-                message.destinationName = topic;
-                client.send(message);
-            }
+        function saveTimerSettings() {
+            const timerPayload = {
+                t1_en: document.getElementById("t1_enable").checked,
+                t1_on: document.getElementById("t1_on").value,
+                t1_off: document.getElementById("t1_off").value,
+                t2_en: document.getElementById("t2_enable").checked,
+                t2_on: document.getElementById("t2_on").value,
+                t2_off: document.getElementById("t2_off").value
+            };
+            publishMQTT("home12/timer", JSON.stringify(timerPayload), true);
+            alert("บันทึกการตั้งเวลาเรียบร้อยแล้ว!");
         }
 
-        // อัปเดตการแสดงผลหน้าเว็บตามโหมด (Auto ปิดสวิตช์ manual, Manual เปิดสวิตช์)
-        function updateUIByMode(mode) {
+        function applyModeUIStatus(mode) {
             const isAuto = (mode === "AUTO");
-            
-            document.getElementById("sw1").disabled = isAuto;
-            document.getElementById("sw2").disabled = isAuto;
-            document.getElementById("sw3").disabled = isAuto;
+            document.getElementById("currentModeBadge").innerText = mode + " MODE";
+            document.getElementById("currentModeBadge").style.color = isAuto ? "var(--accent-green)" : "var(--accent-cyan)";
 
-            const badge = document.getElementById("manualNotice");
-            if (isAuto) {
-                badge.innerText = "โหมด Auto (ควบคุมอัตโนมัติ)";
-                badge.style.background = "#fff3cd";
-                badge.style.color = "#856404";
-            } else {
-                badge.innerText = "โหมด Manual";
-                badge.style.background = "#e0e0e0";
-                badge.style.color = "#555";
+            // Disable manual switches when system in AUTO mode
+            for (let i = 1; i <= 12; i++) {
+                document.getElementById(`sw-${i}`).disabled = isAuto;
             }
         }
 
-        function disableControls(state) {
-            document.getElementById("modeSelect").disabled = state;
-            document.getElementById("sw1").disabled = state;
-            document.getElementById("sw2").disabled = state;
-            document.getElementById("sw3").disabled = state;
+        function updateSingleSwitchUI(ch, isOn) {
+            const card = document.getElementById(`card-sw-${ch}`);
+            const badge = document.getElementById(`badge-sw-${ch}`);
+            const input = document.getElementById(`sw-${ch}`);
+
+            input.checked = isOn;
+            if (isOn) {
+                card.classList.add("active");
+                badge.innerText = "ON";
+            } else {
+                card.classList.remove("active");
+                badge.innerText = "OFF";
+            }
+        }
+
+        function publishMQTT(topic, payload, retain = false) {
+            if (client.isConnected()) {
+                const msg = new Paho.MQTT.Message(payload);
+                msg.destinationName = topic;
+                msg.retained = retain;
+                client.send(msg);
+            }
+        }
+
+        function updateStatusUI(isConnected, text) {
+            const statusDiv = document.getElementById("connectionStatus");
+            const statusText = document.getElementById("statusText");
+
+            statusText.innerText = text;
+            if (isConnected) {
+                statusDiv.classList.add("connected");
+            } else {
+                statusDiv.classList.remove("connected");
+            }
         }
     </script>
 </body>
