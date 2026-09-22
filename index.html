@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lighting Control System</title>
-  <!-- นำเข้า Paho MQTT Library สำหรับเชื่อมต่อ WebSocket -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
   <style>
     * {
@@ -24,7 +23,6 @@
       padding: 20px;
     }
 
-    /* System Header */
     .app-header {
       text-align: center;
       margin-top: 15px;
@@ -43,7 +41,6 @@
       font-size: 1rem;
     }
 
-    /* MQTT Status Badge */
     .mqtt-status {
       padding: 6px 16px;
       border-radius: 20px;
@@ -55,7 +52,6 @@
     .connected { background-color: #22c55e; color: #fff; }
     .disconnected { background-color: #ef4444; color: #fff; }
 
-    /* Views Layout */
     .view {
       display: none;
       width: 100%;
@@ -72,7 +68,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* PAGE 1: ZONE SELECTOR */
     .zone-container {
       display: flex;
       gap: 25px;
@@ -132,7 +127,6 @@
       background: linear-gradient(135deg, #0d9488, #059669);
     }
 
-    /* TOPBAR FOR ZONE DASHBOARD */
     .dashboard-topbar {
       display: flex;
       justify-content: space-between;
@@ -166,7 +160,6 @@
       font-weight: 700;
     }
 
-    /* MODE SELECTOR (AUTO / MANUAL) */
     .mode-selector {
       display: flex;
       background-color: #0f172a;
@@ -200,7 +193,6 @@
       box-shadow: 0 2px 8px rgba(234, 179, 8, 0.4);
     }
 
-    /* AUTO TIMER CONFIG PANEL */
     .timer-config-card {
       background: #1e293b;
       border: 1px solid #334155;
@@ -268,13 +260,6 @@
       width: 100%;
     }
 
-    .timer-inputs input[type="time"]:disabled {
-      cursor: not-allowed;
-      background-color: #0f172a;
-      color: #64748b;
-    }
-
-    /* SWITCH GRID & CARDS */
     .switch-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -315,7 +300,6 @@
       color: #ffffff;
     }
 
-    /* REAL-TIME STATUS INDICATOR */
     .status-container {
       display: flex;
       align-items: center;
@@ -354,7 +338,6 @@
       color: #f87171;
     }
 
-    /* UI TOGGLE SWITCH */
     .toggle-container {
       position: relative;
       display: inline-block;
@@ -401,17 +384,10 @@
       cursor: not-allowed;
       background-color: #334155;
     }
-
-    @media (max-width: 600px) {
-      .switch-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
   </style>
 </head>
 <body>
 
-  <!-- App Header -->
   <div class="app-header">
     <h1>Lighting Control System</h1>
     <p>ระบบควบคุมไฟแสงสว่าง Factory 2 Extension</p>
@@ -421,8 +397,6 @@
   <!-- VIEW 1: ZONE SELECTOR -->
   <div id="view-home" class="view active">
     <div class="zone-container">
-      
-      <!-- Zone PD3 and SCM -->
       <div class="zone-card" onclick="switchView('view-pd3-scm')">
         <div>
           <h2 class="zone-title">PD3 and SCM</h2>
@@ -431,7 +405,6 @@
         <button class="zone-btn">เข้าสู่หน้าควบคุม</button>
       </div>
 
-      <!-- Zone GDC -->
       <div class="zone-card gdc" onclick="switchView('view-gdc')">
         <div>
           <h2 class="zone-title">Zone GDC</h2>
@@ -439,7 +412,6 @@
         </div>
         <button class="zone-btn">เข้าสู่หน้าควบคุม</button>
       </div>
-
     </div>
   </div>
 
@@ -448,7 +420,6 @@
     <div class="dashboard-topbar">
       <button class="back-btn" onclick="switchView('view-home')">← ย้อนกลับหน้าเลือกโซน</button>
       <h2 class="zone-heading">โซน: PD3 and SCM</h2>
-      
       <div class="mode-selector">
         <button class="mode-btn active-auto" id="btn-auto-pd3" onclick="setZoneMode('pd3', 'AUTO')">AUTO</button>
         <button class="mode-btn" id="btn-manual-pd3" onclick="setZoneMode('pd3', 'MANUAL')">MANUAL</button>
@@ -461,21 +432,21 @@
         <div class="timer-item">
           <div class="timer-title">
             <span>ช่วงเวลาที่ 1 (หลัก)</span>
-            <label class="toggle-container"><input type="checkbox" checked><span class="slider"></span></label>
+            <label class="toggle-container"><input type="checkbox" id="timer-en-pd3-1" checked><span class="slider"></span></label>
           </div>
           <div class="timer-inputs">
-            <label>เปิด:</label><input type="time" value="17:30">
-            <label>ปิด:</label><input type="time" value="07:00">
+            <label>เปิด:</label><input type="time" id="timer-pd3-on-1" value="17:30">
+            <label>ปิด:</label><input type="time" id="timer-pd3-off-1" value="07:00">
           </div>
         </div>
         <div class="timer-item">
           <div class="timer-title">
             <span>ช่วงเวลาที่ 2 (แทรกพิเศษ)</span>
-            <label class="toggle-container"><input type="checkbox"><span class="slider"></span></label>
+            <label class="toggle-container"><input type="checkbox" id="timer-en-pd3-2"><span class="slider"></span></label>
           </div>
           <div class="timer-inputs">
-            <label>เปิด:</label><input type="time" value="12:00">
-            <label>ปิด:</label><input type="time" value="13:00">
+            <label>เปิด:</label><input type="time" id="timer-pd3-on-2" value="12:00">
+            <label>ปิด:</label><input type="time" id="timer-pd3-off-2" value="13:00">
           </div>
         </div>
       </div>
@@ -489,7 +460,6 @@
     <div class="dashboard-topbar">
       <button class="back-btn" onclick="switchView('view-home')">← ย้อนกลับหน้าเลือกโซน</button>
       <h2 class="zone-heading">โซน: Zone GDC</h2>
-
       <div class="mode-selector">
         <button class="mode-btn active-auto" id="btn-auto-gdc" onclick="setZoneMode('gdc', 'AUTO')">AUTO</button>
         <button class="mode-btn" id="btn-manual-gdc" onclick="setZoneMode('gdc', 'MANUAL')">MANUAL</button>
@@ -502,21 +472,21 @@
         <div class="timer-item">
           <div class="timer-title">
             <span>ช่วงเวลาที่ 1 (หลัก)</span>
-            <label class="toggle-container"><input type="checkbox" checked><span class="slider"></span></label>
+            <label class="toggle-container"><input type="checkbox" id="timer-en-gdc-1" checked><span class="slider"></span></label>
           </div>
           <div class="timer-inputs">
-            <label>เปิด:</label><input type="time" value="17:30">
-            <label>ปิด:</label><input type="time" value="07:00">
+            <label>เปิด:</label><input type="time" id="timer-gdc-on-1" value="17:30">
+            <label>ปิด:</label><input type="time" id="timer-gdc-off-1" value="07:00">
           </div>
         </div>
         <div class="timer-item">
           <div class="timer-title">
             <span>ช่วงเวลาที่ 2 (แทรกพิเศษ)</span>
-            <label class="toggle-container"><input type="checkbox"><span class="slider"></span></label>
+            <label class="toggle-container"><input type="checkbox" id="timer-en-gdc-2"><span class="slider"></span></label>
           </div>
           <div class="timer-inputs">
-            <label>เปิด:</label><input type="time" value="12:00">
-            <label>ปิด:</label><input type="time" value="13:00">
+            <label>เปิด:</label><input type="time" id="timer-gdc-on-2" value="12:00">
+            <label>ปิด:</label><input type="time" id="timer-gdc-off-2" value="13:00">
           </div>
         </div>
       </div>
@@ -526,7 +496,6 @@
   </div>
 
   <script>
-    // --- ตั้งค่า MQTT Broker (HiveMQ Cloud WebSocket) ---
     const broker = "5796ce96006345e49d2690db778b2ebb.s1.eu.hivemq.cloud";
     const port = 8884;
     const username = "UTTbkk";
@@ -545,9 +514,8 @@
       const topic = message.destinationName;
       const payload = message.payloadString;
       const parts = topic.split('/');
-      const swName = parts[parts.length - 1]; // ดึงชื่อสวิตช์ เช่น M, N, O
+      const swName = parts[parts.length - 1];
       
-      // อัปเดต UI เมื่อได้รับสถานะกลับมาจาก ESP32
       if (gdcSwitches.includes(swName) || pd3Switches.includes(swName)) {
         updateSwitchUI(swName, payload === "1");
       }
@@ -561,7 +529,6 @@
         onSuccess: () => {
           document.getElementById('mqtt-status').className = "mqtt-status connected";
           document.getElementById('mqtt-status').innerText = "MQTT Connected (พร้อมใช้งานทั้ง 2 โซน)";
-          // Subscribe เพื่อรับสถานะอัปเดตกลับมาจากบอร์ดทั้ง 2 โซน
           client.subscribe("factory2/zone_pd3/status/#");
           client.subscribe("factory2/zone_gdc/status/#");
         },
@@ -577,6 +544,8 @@
     const gdcSwitches = ['M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U'];
 
     let zoneModes = { pd3: 'AUTO', gdc: 'AUTO' };
+    // ตัวแปรเก็บสถานะว่า ช่วงเวลาปัจจุบันอยู่ในสถานะ "ควรเปิด (ON)" หรือไม่
+    let isAutoTimeActive = { pd3: false, gdc: false };
 
     function switchView(viewId) {
       document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
@@ -589,7 +558,7 @@
 
       switchList.forEach(name => {
         const card = document.createElement('div');
-        card.className = 'switch-card disabled';
+        card.className = 'switch-card';
         card.id = `card-${name}`;
 
         card.innerHTML = `
@@ -599,7 +568,7 @@
             <span class="status-text" id="status-text-${name}">OFF</span>
           </div>
           <label class="toggle-container">
-            <input type="checkbox" id="toggle-${name}" disabled onchange="userToggleSwitch('${name}', this.checked)">
+            <input type="checkbox" id="toggle-${name}" onchange="userToggleSwitch('${name}', this.checked)">
             <span class="slider"></span>
           </label>
         `;
@@ -613,33 +582,25 @@
       const manualBtn = document.getElementById(`btn-manual-${zone}`);
       const timerPanel = document.getElementById(`timer-panel-${zone}`);
       const switchList = zone === 'pd3' ? pd3Switches : gdcSwitches;
-      const timerInputs = timerPanel.querySelectorAll('input');
 
       if (mode === 'AUTO') {
         autoBtn.className = 'mode-btn active-auto';
         manualBtn.className = 'mode-btn';
         timerPanel.classList.remove('disabled-panel');
-        timerInputs.forEach(input => input.disabled = false);
-
-        switchList.forEach(name => {
-          const card = document.getElementById(`card-${name}`);
-          card.classList.add('disabled');
-          card.classList.remove('active-off-manual');
-          document.getElementById(`toggle-${name}`).disabled = true;
-        });
+        
+        // เมื่อเปลี่ยนกลับมา AUTO ให้เช็คเวลาและอัปเดตสิทธิ์การกดทันที
+        checkAutoTimerForZone(zone);
       } else {
         autoBtn.className = 'mode-btn';
         manualBtn.className = 'mode-btn active-manual';
         timerPanel.classList.add('disabled-panel');
-        timerInputs.forEach(input => input.disabled = true);
 
+        // ในโหมด MANUAL ปลดล็อกให้กดสวิตช์ได้ทั้งหมด
         switchList.forEach(name => {
-          const card = document.getElementById(`card-${name}`);
           const toggleInput = document.getElementById(`toggle-${name}`);
-          
-          card.classList.remove('disabled');
           toggleInput.disabled = false;
-          updateSwitchUI(name, toggleInput.checked);
+          const card = document.getElementById(`card-${name}`);
+          card.classList.remove('disabled');
         });
       }
     }
@@ -647,9 +608,10 @@
     function userToggleSwitch(switchName, isChecked) {
       updateSwitchUI(switchName, isChecked);
       
-      // ส่งคำสั่งผ่าน MQTT เฉพาะเมื่ออยู่ใน Manual Mode และแยกโซนถูกต้อง
       const zone = pd3Switches.includes(switchName) ? 'pd3' : 'gdc';
-      if (zoneModes[zone] === 'MANUAL') {
+      
+      // ส่งคำสั่งผ่าน MQTT ถ้าอยู่ใน Manual หรืออยู่ใน Auto ช่วงเวลาเปิด (ON)
+      if (zoneModes[zone] === 'MANUAL' || (zoneModes[zone] === 'AUTO' && isAutoTimeActive[zone])) {
         if (client.isConnected()) {
           const topic = `factory2/zone_${zone}/command/${switchName}`;
           const message = new Paho.MQTT.Message(isChecked ? "1" : "0");
@@ -693,52 +655,80 @@
       const now = new Date();
       const currentTime = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
 
-      // เช็คโซน PD3 ถ้าอยู่ในโหมด AUTO
       if (zoneModes['pd3'] === 'AUTO') {
         checkAndApplyTimer('pd3', pd3Switches, currentTime);
       }
-
-      // เช็คโซน GDC ถ้าอยู่ในโหมด AUTO
       if (zoneModes['gdc'] === 'AUTO') {
         checkAndApplyTimer('gdc', gdcSwitches, currentTime);
       }
     }, 1000);
 
+    function checkAutoTimerForZone(zone) {
+      const now = new Date();
+      const currentTime = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+      const switchList = zone === 'pd3' ? pd3Switches : gdcSwitches;
+      checkAndApplyTimer(zone, switchList, currentTime);
+    }
+
     function checkAndApplyTimer(zone, switchList, currentTime) {
-      const timerCard = document.getElementById(`timer-panel-${zone}`);
-      const timeInputs = timerCard.querySelectorAll('input[type="time"]');
-      const openTime = timeInputs[0].value;   // เวลาเปิดหลัก (เช่น 17:30)
-      const closeTime = timeInputs[1].value; // เวลาปิดหลัก (เช่น 07:00)
+      const en1 = document.getElementById(`timer-en-${zone}-1`).checked;
+      const on1 = document.getElementById(`timer-pd3-on-1` in window ? `timer-${zone}-on-1` : `timer-${zone}-on-1`).value; // safe getter
+      const off1 = document.getElementById(`timer-${zone}-off-1`).value;
 
-      let shouldTurnOn = false;
+      const en2 = document.getElementById(`timer-en-${zone}-2`).checked;
+      const on2 = document.getElementById(`timer-${zone}-on-2`).value;
+      const off2 = document.getElementById(`timer-${zone}-off-2`).value;
 
-      // เงื่อนไขรองรับช่วงเวลาข้ามวัน (เปิดค่ำ ปิดเช้า)
-      if (openTime < closeTime) {
-        shouldTurnOn = (currentTime >= openTime && currentTime < closeTime);
-      } else {
-        shouldTurnOn = (currentTime >= openTime || currentTime < closeTime);
+      let timeMatched = false;
+
+      // เช็คช่วงเวลาที่ 1
+      if (en1) {
+        if (on1 < off1) {
+          if (currentTime >= on1 && currentTime < off1) timeMatched = true;
+        } else {
+          if (currentTime >= on1 || currentTime < off1) timeMatched = true;
+        }
       }
+
+      // เช็คช่วงเวลาที่ 2
+      if (en2 && !timeMatched) {
+        if (on2 < off2) {
+          if (currentTime >= on2 && currentTime < off2) timeMatched = true;
+        } else {
+          if (currentTime >= on2 || currentTime < off2) timeMatched = true;
+        }
+      }
+
+      isAutoTimeActive[zone] = timeMatched;
 
       switchList.forEach(name => {
         const toggleInput = document.getElementById(`toggle-${name}`);
-        const currentState = toggleInput.checked;
+        const card = document.getElementById(`card-${name}`);
 
-        // ถือว่าถ้าสถานะเวลาคำนวณไม่ตรงกับ UI ปัจจุบัน ให้สั่งเปลี่ยนและส่ง MQTT ไปบอกบอร์ด
-        if (currentState !== shouldTurnOn) {
-          updateSwitchUI(name, shouldTurnOn);
-          
-          if (client.isConnected()) {
-            const topic = `factory2/zone_${zone}/command/${name}`;
-            const message = new Paho.MQTT.Message(shouldTurnOn ? "1" : "0");
-            message.destinationName = topic;
-            client.send(message);
-            console.log(`[AUTO TIMER] -> ${topic} : ${shouldTurnOn ? "1" : "0"}`);
+        if (timeMatched) {
+          // ช่วงเวลาเปิด (ON): ปลดล็อกให้ผู้ใช้กดเปิด-ปิดเองได้อิสระ
+          toggleInput.disabled = false;
+          card.classList.remove('disabled');
+        } else {
+          // ช่วงเวลาปิด (OFF): บังคับปิดทั้งหมด และล็อกปุ่มไม่ให้กดเปลี่ยน
+          toggleInput.disabled = true;
+          card.classList.add('disabled');
+
+          const currentState = toggleInput.checked;
+          if (currentState !== false) {
+            updateSwitchUI(name, false);
+            if (client.isConnected()) {
+              const topic = `factory2/zone_${zone}/command/${name}`;
+              const message = new Paho.MQTT.Message("0");
+              message.destinationName = topic;
+              client.send(message);
+              console.log(`[AUTO TIMER - FORCE OFF] -> ${topic} : 0`);
+            }
           }
         }
       });
     }
 
-    // Initialize Layout & MQTT Connection
     renderSwitches(pd3Switches, 'grid-pd3-scm');
     renderSwitches(gdcSwitches, 'grid-gdc');
     connectMQTT();
