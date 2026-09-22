@@ -560,8 +560,9 @@
         password: password,
         onSuccess: () => {
           document.getElementById('mqtt-status').className = "mqtt-status connected";
-          document.getElementById('mqtt-status').innerText = "MQTT Connected (พร้อมใช้งาน)";
-          // Subscribe เพื่อรับสถานะอัปเดตกลับมาจากบอร์ด
+          document.getElementById('mqtt-status').innerText = "MQTT Connected (พร้อมใช้งานทั้ง 2 โซน)";
+          // Subscribe เพื่อรับสถานะอัปเดตกลับมาจากบอร์ดทั้ง 2 โซน
+          client.subscribe("factory2/zone_pd3/status/#");
           client.subscribe("factory2/zone_gdc/status/#");
         },
         onFailure: () => {
@@ -646,11 +647,11 @@
     function userToggleSwitch(switchName, isChecked) {
       updateSwitchUI(switchName, isChecked);
       
-      // ส่งคำสั่งผ่าน MQTT เฉพาะเมื่ออยู่ใน Manual Mode
+      // ส่งคำสั่งผ่าน MQTT เฉพาะเมื่ออยู่ใน Manual Mode และแยกโซนถูกต้อง
       const zone = pd3Switches.includes(switchName) ? 'pd3' : 'gdc';
       if (zoneModes[zone] === 'MANUAL') {
         if (client.isConnected()) {
-          const topic = `factory2/zone_gdc/command/${switchName}`;
+          const topic = `factory2/zone_${zone}/command/${switchName}`;
           const message = new Paho.MQTT.Message(isChecked ? "1" : "0");
           message.destinationName = topic;
           client.send(message);
@@ -685,6 +686,56 @@
           card.classList.remove('active-off-manual');
         }
       }
+    }
+
+    // --- ระบบเช็คเวลาอัตโนมัติ (AUTO TIMER INTERVAL) ---
+    setInterval(() => {
+      const now = new Date();
+      const currentTime = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+
+      // เช็คโซน PD3 ถ้าอยู่ในโหมด AUTO
+      if (zoneModes['pd3'] === 'AUTO') {
+        checkAndApplyTimer('pd3', pd3Switches, currentTime);
+      }
+
+      // เช็คโซน GDC ถ้าอยู่ในโหมด AUTO
+      if (zoneModes['gdc'] === 'AUTO') {
+        checkAndApplyTimer('gdc', gdcSwitches, currentTime);
+      }
+    }, 1000);
+
+    function checkAndApplyTimer(zone, switchList, currentTime) {
+      const timerCard = document.getElementById(`timer-panel-${zone}`);
+      const timeInputs = timerCard.querySelectorAll('input[type="time"]');
+      const openTime = timeInputs[0].value;   // เวลาเปิดหลัก (เช่น 17:30)
+      const closeTime = timeInputs[1].value; // เวลาปิดหลัก (เช่น 07:00)
+
+      let shouldTurnOn = false;
+
+      // เงื่อนไขรองรับช่วงเวลาข้ามวัน (เปิดค่ำ ปิดเช้า)
+      if (openTime < closeTime) {
+        shouldTurnOn = (currentTime >= openTime && currentTime < closeTime);
+      } else {
+        shouldTurnOn = (currentTime >= openTime || currentTime < closeTime);
+      }
+
+      switchList.forEach(name => {
+        const toggleInput = document.getElementById(`toggle-${name}`);
+        const currentState = toggleInput.checked;
+
+        // ถือว่าถ้าสถานะเวลาคำนวณไม่ตรงกับ UI ปัจจุบัน ให้สั่งเปลี่ยนและส่ง MQTT ไปบอกบอร์ด
+        if (currentState !== shouldTurnOn) {
+          updateSwitchUI(name, shouldTurnOn);
+          
+          if (client.isConnected()) {
+            const topic = `factory2/zone_${zone}/command/${name}`;
+            const message = new Paho.MQTT.Message(shouldTurnOn ? "1" : "0");
+            message.destinationName = topic;
+            client.send(message);
+            console.log(`[AUTO TIMER] -> ${topic} : ${shouldTurnOn ? "1" : "0"}`);
+          }
+        }
+      });
     }
 
     // Initialize Layout & MQTT Connection
