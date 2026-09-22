@@ -310,7 +310,7 @@
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      background-color: #ef4444; /* เริ่มต้นเป็นสีแดง */
+      background-color: #ef4444;
       box-shadow: 0 0 10px #ef4444;
       transition: all 0.3s;
     }
@@ -318,7 +318,7 @@
     .status-text {
       font-size: 0.9rem;
       font-weight: 700;
-      color: #f87171; /* เริ่มต้นเป็นสีแดง */
+      color: #f87171;
     }
 
     .switch-card.active-on .status-dot {
@@ -546,6 +546,7 @@
 
     let zoneModes = { pd3: 'AUTO', gdc: 'AUTO' };
     let isAutoTimeActive = { pd3: false, gdc: false };
+    let lastAutoState = { pd3: null, gdc: null }; // เก็บสถานะช่วงเวลา Auto ล่าสุดเพื่อสั่งเปิดทั้งหมดครั้งเดียวเมื่อถึงเวลา ON
 
     function switchView(viewId) {
       document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
@@ -558,7 +559,7 @@
 
       switchList.forEach(name => {
         const card = document.createElement('div');
-        card.className = 'switch-card active-off-manual'; // เริ่มต้นให้แสดงกรอบและสถานะสีแดง (OFF) ทันที
+        card.className = 'switch-card active-off-manual';
         card.id = `card-${name}`;
 
         card.innerHTML = `
@@ -587,6 +588,7 @@
         autoBtn.className = 'mode-btn active-auto';
         manualBtn.className = 'mode-btn';
         timerPanel.classList.remove('disabled-panel');
+        lastAutoState[zone] = null; // รีเซ็ตเพื่อให้เช็คช่วงเวลาใหม่
         checkAutoTimerForZone(zone);
       } else {
         autoBtn.className = 'mode-btn';
@@ -596,7 +598,9 @@
         switchList.forEach(name => {
           const toggleInput = document.getElementById(`toggle-${name}`);
           toggleInput.disabled = false;
-          updateSwitchUI(name, toggleInput.checked); // บังคับอัปเดตสีตามสถานะปัจจุบัน
+          card = document.getElementById(`card-${name}`);
+          card.classList.remove('disabled');
+          updateSwitchUI(name, toggleInput.checked);
         });
       }
     }
@@ -632,7 +636,7 @@
         if (statusText) statusText.innerText = 'ON';
       } else {
         card.classList.remove('active-on');
-        card.classList.add('active-off-manual'); // แสดงเป็นสีแดง (OFF) เสมอเมื่อปิด
+        card.classList.add('active-off-manual');
         if (statusText) statusText.innerText = 'OFF';
       }
     }
@@ -685,6 +689,10 @@
 
       isAutoTimeActive[zone] = timeMatched;
 
+      // ตรวจสอบว่าสถานะช่วงเวลาเปลี่ยนจาก OFF เป็น ON หรือไม่ เพื่อสั่งเปิดไฟทั้งหมดโดยอัตโนมัติรอบแรกที่เข้าเงื่อนไข
+      const justTurnedOn = (timeMatched && lastAutoState[zone] !== true);
+      lastAutoState[zone] = timeMatched;
+
       switchList.forEach(name => {
         const toggleInput = document.getElementById(`toggle-${name}`);
         const card = document.getElementById(`card-${name}`);
@@ -692,6 +700,18 @@
         if (timeMatched) {
           toggleInput.disabled = false;
           card.classList.remove('disabled');
+
+          // ถ้าเพิ่งเข้าช่วงเวลาเปิด ให้สั่งเปิดไฟ (ON) ทั้งหมด
+          if (justTurnedOn) {
+            updateSwitchUI(name, true);
+            if (client.isConnected()) {
+              const topic = `factory2/zone_${zone}/command/${name}`;
+              const message = new Paho.MQTT.Message("1");
+              message.destinationName = topic;
+              client.send(message);
+              console.log(`[AUTO TIMER - FORCE ON] -> ${topic} : 1`);
+            }
+          }
         } else {
           toggleInput.disabled = true;
           card.classList.add('disabled');
