@@ -310,14 +310,15 @@
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      background-color: #64748b;
+      background-color: #ef4444; /* เริ่มต้นเป็นสีแดง */
+      box-shadow: 0 0 10px #ef4444;
       transition: all 0.3s;
     }
 
     .status-text {
       font-size: 0.9rem;
       font-weight: 700;
-      color: #94a3b8;
+      color: #f87171; /* เริ่มต้นเป็นสีแดง */
     }
 
     .switch-card.active-on .status-dot {
@@ -544,7 +545,6 @@
     const gdcSwitches = ['M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U'];
 
     let zoneModes = { pd3: 'AUTO', gdc: 'AUTO' };
-    // ตัวแปรเก็บสถานะว่า ช่วงเวลาปัจจุบันอยู่ในสถานะ "ควรเปิด (ON)" หรือไม่
     let isAutoTimeActive = { pd3: false, gdc: false };
 
     function switchView(viewId) {
@@ -558,7 +558,7 @@
 
       switchList.forEach(name => {
         const card = document.createElement('div');
-        card.className = 'switch-card';
+        card.className = 'switch-card active-off-manual'; // เริ่มต้นให้แสดงกรอบและสถานะสีแดง (OFF) ทันที
         card.id = `card-${name}`;
 
         card.innerHTML = `
@@ -587,20 +587,16 @@
         autoBtn.className = 'mode-btn active-auto';
         manualBtn.className = 'mode-btn';
         timerPanel.classList.remove('disabled-panel');
-        
-        // เมื่อเปลี่ยนกลับมา AUTO ให้เช็คเวลาและอัปเดตสิทธิ์การกดทันที
         checkAutoTimerForZone(zone);
       } else {
         autoBtn.className = 'mode-btn';
         manualBtn.className = 'mode-btn active-manual';
         timerPanel.classList.add('disabled-panel');
 
-        // ในโหมด MANUAL ปลดล็อกให้กดสวิตช์ได้ทั้งหมด
         switchList.forEach(name => {
           const toggleInput = document.getElementById(`toggle-${name}`);
           toggleInput.disabled = false;
-          const card = document.getElementById(`card-${name}`);
-          card.classList.remove('disabled');
+          updateSwitchUI(name, toggleInput.checked); // บังคับอัปเดตสีตามสถานะปัจจุบัน
         });
       }
     }
@@ -610,7 +606,6 @@
       
       const zone = pd3Switches.includes(switchName) ? 'pd3' : 'gdc';
       
-      // ส่งคำสั่งผ่าน MQTT ถ้าอยู่ใน Manual หรืออยู่ใน Auto ช่วงเวลาเปิด (ON)
       if (zoneModes[zone] === 'MANUAL' || (zoneModes[zone] === 'AUTO' && isAutoTimeActive[zone])) {
         if (client.isConnected()) {
           const topic = `factory2/zone_${zone}/command/${switchName}`;
@@ -629,9 +624,6 @@
       const statusText = document.getElementById(`status-text-${switchName}`);
       const toggleInput = document.getElementById(`toggle-${switchName}`);
 
-      const zone = pd3Switches.includes(switchName) ? 'pd3' : 'gdc';
-      const isManualMode = zoneModes[zone] === 'MANUAL';
-
       if (toggleInput) toggleInput.checked = isOn;
       
       if (isOn) {
@@ -640,17 +632,11 @@
         if (statusText) statusText.innerText = 'ON';
       } else {
         card.classList.remove('active-on');
+        card.classList.add('active-off-manual'); // แสดงเป็นสีแดง (OFF) เสมอเมื่อปิด
         if (statusText) statusText.innerText = 'OFF';
-        
-        if (isManualMode) {
-          card.classList.add('active-off-manual');
-        } else {
-          card.classList.remove('active-off-manual');
-        }
       }
     }
 
-    // --- ระบบเช็คเวลาอัตโนมัติ (AUTO TIMER INTERVAL) ---
     setInterval(() => {
       const now = new Date();
       const currentTime = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
@@ -672,7 +658,7 @@
 
     function checkAndApplyTimer(zone, switchList, currentTime) {
       const en1 = document.getElementById(`timer-en-${zone}-1`).checked;
-      const on1 = document.getElementById(`timer-pd3-on-1` in window ? `timer-${zone}-on-1` : `timer-${zone}-on-1`).value; // safe getter
+      const on1 = document.getElementById(`timer-${zone}-on-1`).value;
       const off1 = document.getElementById(`timer-${zone}-off-1`).value;
 
       const en2 = document.getElementById(`timer-en-${zone}-2`).checked;
@@ -681,7 +667,6 @@
 
       let timeMatched = false;
 
-      // เช็คช่วงเวลาที่ 1
       if (en1) {
         if (on1 < off1) {
           if (currentTime >= on1 && currentTime < off1) timeMatched = true;
@@ -690,7 +675,6 @@
         }
       }
 
-      // เช็คช่วงเวลาที่ 2
       if (en2 && !timeMatched) {
         if (on2 < off2) {
           if (currentTime >= on2 && currentTime < off2) timeMatched = true;
@@ -706,11 +690,9 @@
         const card = document.getElementById(`card-${name}`);
 
         if (timeMatched) {
-          // ช่วงเวลาเปิด (ON): ปลดล็อกให้ผู้ใช้กดเปิด-ปิดเองได้อิสระ
           toggleInput.disabled = false;
           card.classList.remove('disabled');
         } else {
-          // ช่วงเวลาปิด (OFF): บังคับปิดทั้งหมด และล็อกปุ่มไม่ให้กดเปลี่ยน
           toggleInput.disabled = true;
           card.classList.add('disabled');
 
