@@ -282,16 +282,18 @@
       opacity: 0.6;
     }
 
+    /* ปรับแต่งสีสถานะ ON ให้เข้มและเรืองแสงเด่นชัด */
     .switch-card.active-on {
-      border-color: #22c55e !important;
-      background-color: #14291f;
-      box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+      border-color: #16a34a !important;
+      background-color: #0d2818;
+      box-shadow: 0 0 20px rgba(22, 163, 74, 0.35);
     }
 
+    /* ปรับแต่งสีสถานะ OFF ให้เข้มและเรืองแสงเด่นชัด */
     .switch-card.active-off-manual {
-      border-color: #ef4444;
-      background-color: #291415;
-      box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+      border-color: #dc2626 !important;
+      background-color: #2e1012;
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
     }
 
     .switch-name {
@@ -307,36 +309,36 @@
     }
 
     .status-dot {
-      width: 12px;
-      height: 12px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
-      background-color: #ef4444;
-      box-shadow: 0 0 10px #ef4444;
+      background-color: #dc2626;
+      box-shadow: 0 0 12px #dc2626;
       transition: all 0.3s;
     }
 
     .status-text {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: #f87171;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #fca5a5;
     }
 
     .switch-card.active-on .status-dot {
       background-color: #22c55e;
-      box-shadow: 0 0 10px #22c55e;
+      box-shadow: 0 0 14px #22c55e;
     }
 
     .switch-card.active-on .status-text {
-      color: #4ade80;
+      color: #86efac;
     }
 
     .switch-card.active-off-manual .status-dot {
-      background-color: #ef4444;
-      box-shadow: 0 0 10px #ef4444;
+      background-color: #dc2626;
+      box-shadow: 0 0 14px #dc2626;
     }
 
     .switch-card.active-off-manual .status-text {
-      color: #f87171;
+      color: #fca5a5;
     }
 
     .toggle-container {
@@ -374,7 +376,7 @@
     }
 
     input:checked + .slider {
-      background-color: #22c55e;
+      background-color: #16a34a;
     }
 
     input:checked + .slider:before {
@@ -546,7 +548,7 @@
 
     let zoneModes = { pd3: 'AUTO', gdc: 'AUTO' };
     let isAutoTimeActive = { pd3: false, gdc: false };
-    let lastAutoState = { pd3: null, gdc: null }; // เก็บสถานะช่วงเวลา Auto ล่าสุดเพื่อสั่งเปิดทั้งหมดครั้งเดียวเมื่อถึงเวลา ON
+    let lastAutoState = { pd3: null, gdc: null };
 
     function switchView(viewId) {
       document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
@@ -588,7 +590,7 @@
         autoBtn.className = 'mode-btn active-auto';
         manualBtn.className = 'mode-btn';
         timerPanel.classList.remove('disabled-panel');
-        lastAutoState[zone] = null; // รีเซ็ตเพื่อให้เช็คช่วงเวลาใหม่
+        lastAutoState[zone] = null;
         checkAutoTimerForZone(zone);
       } else {
         autoBtn.className = 'mode-btn';
@@ -598,7 +600,7 @@
         switchList.forEach(name => {
           const toggleInput = document.getElementById(`toggle-${name}`);
           toggleInput.disabled = false;
-          card = document.getElementById(`card-${name}`);
+          const card = document.getElementById(`card-${name}`);
           card.classList.remove('disabled');
           updateSwitchUI(name, toggleInput.checked);
         });
@@ -689,7 +691,6 @@
 
       isAutoTimeActive[zone] = timeMatched;
 
-      // ตรวจสอบว่าสถานะช่วงเวลาเปลี่ยนจาก OFF เป็น ON หรือไม่ เพื่อสั่งเปิดไฟทั้งหมดโดยอัตโนมัติรอบแรกที่เข้าเงื่อนไข
       const justTurnedOn = (timeMatched && lastAutoState[zone] !== true);
       lastAutoState[zone] = timeMatched;
 
@@ -701,7 +702,6 @@
           toggleInput.disabled = false;
           card.classList.remove('disabled');
 
-          // ถ้าเพิ่งเข้าช่วงเวลาเปิด ให้สั่งเปิดไฟ (ON) ทั้งหมด
           if (justTurnedOn) {
             updateSwitchUI(name, true);
             if (client.isConnected()) {
